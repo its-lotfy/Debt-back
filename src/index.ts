@@ -1,17 +1,16 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import { DataStore } from './services/dataStore';
 import authRoutes from './routes/auth';
 import debtRoutes from './routes/debts';
 import userRoutes from './routes/users';
-import { authenticateToken } from './middleware/auth';
+import { authMiddleware } from './middleware/auth';
+import User from './models/user.model';
+import Debt from './models/debt.model';
+import connectDB from './config/db';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-
-// Initialize data store with sample data
-DataStore.initialize();
 
 // Middleware
 app.use(helmet());
@@ -29,18 +28,24 @@ app.use((req, res, next) => {
 });
 
 // Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Debt Management API is running',
-    timestamp: new Date().toISOString(),
-    stats: DataStore.getStats()
-  });
+app.get('/health', async (req, res) => {
+  try {
+    const users = await User.countDocuments();
+    const debts = await Debt.countDocuments();
+    res.json({
+      success: true,
+      message: 'Debt Management API is running',
+      timestamp: new Date().toISOString(),
+      stats: { users, debts }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to fetch stats' });
+  }
 });
 
 // API routes
 app.use('/api/auth', authRoutes);
-app.use('/api/debts',authenticateToken, debtRoutes);
+app.use('/api/debts', authMiddleware, debtRoutes);
 app.use('/api/users', userRoutes);
 
 // Error handling middleware
@@ -61,9 +66,9 @@ app.use('*', (req, res) => {
 });
 
 // Start server
+connectDB();
 app.listen(PORT, () => {
   console.log(`🚀 Debt Management API running on port ${PORT}`);
-  console.log(`📊 Sample data initialized with ${DataStore.getStats().users} users and ${DataStore.getStats().debts} debts`);
   console.log(`🔗 API available at http://localhost:${PORT}`);
   console.log(`📋 Health check: http://localhost:${PORT}/health`);
 });

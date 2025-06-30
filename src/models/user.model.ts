@@ -1,5 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import { IUser } from '../types';
 
 const UserSchema: Schema<IUser> = new Schema({
@@ -25,7 +25,7 @@ UserSchema.pre<IUser>('save', async function (next) {
 UserSchema.methods.comparePassword = async function (enteredPassword: string): Promise<boolean> {
   return await bcrypt.compare(enteredPassword, this.password);
 };
-
+ 
 const User = mongoose.model<IUser>('User', UserSchema);
 
 export default User; 

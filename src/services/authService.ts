@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/user.model';
 import { LoginRequest, RegisterRequest } from '../types';
+import bcrypt from 'bcrypt';
 
 const generateToken = (id: string) => {
   return jwt.sign({ id }, process.env.JWT_SECRET as string, {
@@ -40,7 +41,6 @@ export const register = async (userData: RegisterRequest) => {
 export const login = async (loginData: LoginRequest) => {
   const { email, password } = loginData;
   const user = await User.findOne({ email });
-
   if (user && (await user.comparePassword(password))) {
     return {
       token: generateToken(user.id),
@@ -85,14 +85,14 @@ export class AuthService {
   /**
    * Generate JWT token for a user
    */
-  static generateToken(user: User): string {
+  static generateToken(user: any): string {
     const payload = {
       userId: user.id,
       email: user.email,
       name: user.name,
       isAdmin: user.isAdmin
     };
-    
+    console.log("payload",payload)
     return jwt.sign(payload, process.env.JWT_SECRET as string, { expiresIn: '24h' });
   }
   
